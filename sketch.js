@@ -1,4 +1,4 @@
-const world = [];
+let world = [];
 let rotation;
 const rotationSpeed = 0.02;
 let specialSphere = [0, 0, 0, 0]; // Controllable sphere position
@@ -23,40 +23,31 @@ function setup() {
 }
 
 function draw() {
-  // Removed orbitControl();
   perspective();
   handleInput();
   background(30);
   ambientLight(150);
   directionalLight(255, 255, 255, 0, 1, -1);
 
-  // Draw random spheres
-  world.forEach(({ center, radius, color }) => {
-    const [x, y, z, w] = matVecMult(rotation, center);
-    if (Math.abs(w) <= radius) {
-      push();
-      translate(x, y, z);
-      ambientMaterial(...color);
-      sphere(Math.sqrt(radius ** 2 - w ** 2));
-      pop();
+  // Draw random spheres and check for collisions with the special sphere
+  world = world.filter(({ center, radius, color }) => {
+    const distToSpecialSphere = calculateDistance(center, specialSphere);
+
+    // Check if the distance is less than the sum of the radii (indicating a collision)
+    if (distToSpecialSphere < radius + 30) { // 30 is the radius of the special sphere
+      console.log("Sphere eaten:", center, "by special sphere at", specialSphere);
+      console.log(world.length + " spheres to go")
+      return false; // This sphere is eaten and should be removed
     }
+
+    // Draw the sphere if not eaten (use rotated position for rendering)
+    drawSphere(center, radius, color);
+    
+    return true; // Keep this sphere in the world
   });
 
   // Draw special controllable sphere with glow + color shift
-  const [sx, sy, sz, sw] = matVecMult(rotation, specialSphere);
-  if (Math.abs(sw) <= 30) {
-    const pulse = (sin(frameCount * 0.1) + 1) * 0.5;
-    const r = lerp(200, 255, pulse);
-    const g = lerp(50, 200, pulse);
-    const b = lerp(255, 200, pulse);
-
-    push();
-    translate(sx, sy, sz);
-    ambientMaterial(r, g, b);
-    emissiveMaterial(r * 0.3, g * 0.3, b * 0.3);
-    sphere(Math.sqrt(30 ** 2 - sw ** 2));
-    pop();
-  }
+  drawSpecialSphere();
 
   // Draw 4D compass
   draw4DCompass();
@@ -123,6 +114,47 @@ function draw4DCompass() {
   line(0, 0, 0, ew[0] * scale, ew[1] * scale, ew[2] * scale);
 
   pop();
+}
+
+function drawSpecialSphere() {
+  const [sx, sy, sz, sw] = matVecMult(rotation, specialSphere);
+  if (Math.abs(sw) <= 30) {
+    const pulse = (sin(frameCount * 0.1) + 1) * 0.5;
+    const r = lerp(200, 255, pulse);
+    const g = lerp(50, 200, pulse);
+    const b = lerp(255, 200, pulse);
+
+    push();
+    translate(sx, sy, sz);
+    ambientMaterial(r, g, b);
+    emissiveMaterial(r * 0.3, g * 0.3, b * 0.3);
+    sphere(Math.sqrt(30 ** 2 - sw ** 2));  // Ensure valid radius
+    pop();
+  }
+}
+
+function drawSphere(center, radius, color) {
+  const [x, y, z, w] = matVecMult(rotation, center);
+
+  // Ensure the radius under the square root is valid (non-negative)
+  const validRadius = Math.sqrt(radius ** 2 - w ** 2);
+  if (!isNaN(validRadius) && validRadius >= 0) {
+    push();
+    translate(x, y, z);
+    ambientMaterial(...color);
+    sphere(validRadius);
+    pop();
+  }
+}
+
+function calculateDistance(center1, center2) {
+  // Calculate the distance between two 4D points
+  const [x1, y1, z1, w1] = center1;
+  const [x2, y2, z2, w2] = center2;
+
+  return Math.sqrt(
+    (x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2 + (w2 - w1) ** 2
+  );
 }
 
 const identityMatrix = () =>
