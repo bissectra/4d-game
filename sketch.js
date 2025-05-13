@@ -75,12 +75,24 @@ function drawTarget() {
 
 // Input Handling
 function handleInput() {
-  handleRotation();
-  handleTranslation();
+  const step = 5;
+  const rotationSpeed = 0.02;
+
+  const keyMappings = [
+    { keys: ['Y', 'H', 'U', 'J', 'I', 'K', 'O', 'L'], action: handleTranslation },
+    { keys: ['Q', 'W', 'E', 'A', 'S', 'D'], action: handleRotation },
+  ];
+
+  keyMappings.forEach(({ keys, action }) => {
+    keys.forEach((key) => {
+      if (keyIsDown(key.charCodeAt(0))) {
+        action(key, step, rotationSpeed);
+      }
+    });
+  });
 }
 
-function handleTranslation() {
-  const step = 5;
+function handleTranslation(key, step) {
   const keyMap = {
     Y: [step, 0, 0, 0],
     H: [-step, 0, 0, 0],
@@ -92,17 +104,12 @@ function handleTranslation() {
     L: [0, 0, 0, -step],
   };
 
-  Object.entries(keyMap).forEach(([key, value]) => {
-    if (keyIsDown(key.charCodeAt(0))) {
-      const transform = translationMatrix(...value);
-      model = matMatMult(transform, model);
-    }
-  });
+  const transform = translationMatrix(...keyMap[key]);
+  model = matMatMult(transform, model);
 }
 
-function handleRotation() {
-  const rotationSpeed = 0.02;
-  const angle = () => (keyIsDown(SHIFT) ? -rotationSpeed : rotationSpeed);
+function handleRotation(key, _, rotationSpeed) {
+  const angle = keyIsDown(SHIFT) ? -rotationSpeed : rotationSpeed;
 
   const keyMap = {
     Q: [0, 1],
@@ -113,12 +120,8 @@ function handleRotation() {
     D: [2, 3],
   };
 
-  Object.entries(keyMap).forEach(([key, value]) => {
-    if (keyIsDown(key.charCodeAt(0))) {
-      const transform = rotationAboutPoint([0, 0, 0, 0], ...value, angle());
-      model = matMatMult(transform, model);
-    }
-  });
+  const transform = rotationAboutPoint([0, 0, 0, 0], ...keyMap[key], angle);
+  model = matMatMult(transform, model);
 }
 
 // Shooting Logic
