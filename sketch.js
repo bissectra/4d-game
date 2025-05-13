@@ -91,7 +91,7 @@ function drawTarget() {
 
 // Input Handling
 function handleInput() {
-  const step = 5;
+  const step = 3;
   const rotationSpeed = 0.02;
 
   const keyMappings = [
