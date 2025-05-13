@@ -1,5 +1,4 @@
 let world = [];
-let playerRadius = 20;
 let model;
 let shootSound;
 
@@ -21,11 +20,6 @@ function keyPressed() {
   if (key === ' ') {
     shoot();
   }
-}
-
-function player() {
-  const [x, y, z, w, t] = model.map((row) => row[4]);
-  return [-x / t, -y / t, -z / t, -w / t];
 }
 
 function randomSphere() {
@@ -123,8 +117,8 @@ function drawTarget() {
   stroke(255, 0, 0);  // Red color
   noFill();
 
-  line(-playerRadius, 0, 0, playerRadius, 0, 0);  // Horizontal line
-  line(0, -playerRadius, 0, 0, playerRadius, 0);  // Vertical line
+  line(-20, 0, 0, 20, 0, 0);  // Horizontal line
+  line(0, -20, 0, 0, 20, 0);  // Vertical line
 
   // Re-enable depth test for future objects
   drawingContext.enable(drawingContext.DEPTH_TEST);
