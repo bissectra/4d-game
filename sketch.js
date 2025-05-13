@@ -36,11 +36,11 @@ function draw() {
     drawSphere(center, radius, color);
   });
 
-  drawSphere(player(), playerRadius, [255, 255, 0]);
+  drawSphere([0,0,0,0], playerRadius, [255, 255, 0], false);
 }
 
-function drawSphere(center, radius, color) {
-  const [x, y, z, w] = matVecMult(model, [...center, 1]);
+function drawSphere(center, radius, color, transform=true) {
+  const [x, y, z, w] = transform ? matVecMult(model, [...center, 1]): center;
 
   const validRadius = Math.sqrt(radius ** 2 - w ** 2);
   if (!isNaN(validRadius) && validRadius >= 0) {
@@ -93,7 +93,7 @@ function handleRotation() {
 
   Object.entries(keyMap).forEach(([key, value]) => {
     if (keyIsDown(key.charCodeAt(0))) {
-      transform = rotationAboutPoint(player(), ...value, angle());
+      transform = rotationAboutPoint([0,0,0,0], ...value, angle());
       model = matMatMult(transform, model);
     }
   });

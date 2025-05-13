@@ -27,12 +27,13 @@ const translationMatrix = (x, y, z, w) => {
 };
 
 const rotationAboutPoint = (point, i, j, angle) => {
-  const [x,y,z,w] = point;
-  const translation = translationMatrix(x, y, z, w);
-  const inverse = translationMatrix(-x, -y, -z, -w);
+  const [x, y, z, w] = point;
+  const toOrigin = translationMatrix(-x, -y, -z, -w);
+  const back = translationMatrix(x, y, z, w);
   const rotation = rotationMatrix(i, j, angle);
-  return matMatMult(inverse, matMatMult(rotation, translation));
+  return matMatMult(back, matMatMult(rotation, toOrigin));
 };
+
 
 function printMatrix(matrix) {
   matrix.forEach(row => {
