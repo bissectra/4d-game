@@ -1,5 +1,4 @@
 let world = [];
-let player = [0,0,0,0];
 let playerRadius = 20;
 let model;
 
@@ -11,6 +10,12 @@ function setup() {
     world.push(randomSphere());
   }
 }
+
+function player() {
+  const [x, y, z, w, t] = model.map(row => row[4]);
+  return [-x / t, -y / t, -z / t, -w / t];
+}
+
 
 function randomSphere() {
   return {
@@ -30,7 +35,7 @@ function draw() {
     drawSphere(center, radius, color);
   })
 
-  drawSphere(player, playerRadius, [255,255,0])
+  drawSphere(player(), playerRadius, [255,255,0])
 }
 
 function drawSphere(center, radius, color) {
