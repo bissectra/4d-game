@@ -8,7 +8,11 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(600, 600, WEBGL);
+  const canvasContainer = document.body; // Use the body to calculate available space
+  const canvasWidth = canvasContainer.clientWidth;
+  const canvasHeight = canvasContainer.clientHeight - document.querySelector('main').offsetHeight;
+
+  createCanvas(canvasWidth, canvasHeight, WEBGL);
   noStroke();
   model = identityMatrix(5);
   generateWorld(100);
@@ -23,6 +27,14 @@ function draw() {
   setupLighting();
   drawWorld();
   drawTarget();
+}
+
+function windowResized() {
+  const canvasContainer = document.body; // Use the body to calculate available space
+  const canvasWidth = canvasContainer.clientWidth;
+  const canvasHeight = canvasContainer.clientHeight - document.querySelector('main').offsetHeight;
+
+  resizeCanvas(canvasWidth, canvasHeight);
 }
 
 function keyPressed() {

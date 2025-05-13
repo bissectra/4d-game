@@ -1,17 +1,24 @@
 html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: rgb(200, 200, 200);
   font-family: Arial, sans-serif;
 }
 
 canvas {
   display: block;
+  flex-grow: 1; /* Allow the canvas to grow and fill the remaining space */
+  width: 100%; /* Ensure the canvas stretches horizontally */
+  height: 100%; /* Ensure the canvas stretches vertically */
 }
 
 main {
   text-align: center;
   padding: 20px;
+  flex-shrink: 0; /* Prevent shrinking of the header */
 }
 
 h1 {
