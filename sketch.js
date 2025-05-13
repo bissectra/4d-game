@@ -1,5 +1,6 @@
 let world = [];
 let player = [0,0,0,0];
+let playerRadius = 20;
 let model;
 
 function setup() {
@@ -14,8 +15,8 @@ function setup() {
 function randomSphere() {
   return {
     center: Array.from({ length: 4 }, () => random(-100, 100)),
-    radius: random(10, 20),
-    color: [random(100, 255), random(100, 255), random(100, 255)],
+    radius: 10,
+    color: [random(0, 200), random(0, 200), random(100, 255)],
   };
 }
 
@@ -28,6 +29,8 @@ function draw() {
   world.forEach(({center, radius, color}) => {
     drawSphere(center, radius, color);
   })
+
+  drawSphere(player, playerRadius, [255,255,0])
 }
 
 function drawSphere(center, radius, color) {
