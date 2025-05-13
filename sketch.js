@@ -70,7 +70,7 @@ function handleInput() {
   if (keyIsDown(89)) player[3] -= moveStep; // Y → W−
   if (keyIsDown(72)) player[3] += moveStep; // H → W+
 
-  // Wrap around [-100, 1https://bissectra.github.io/4d-game/00]
+  // Wrap around [-100, 100]
   for (let i = 0; i < 4; i++) {
     if (player[i] > 100)
       player[i] = -100 + (player[i] - 100);
