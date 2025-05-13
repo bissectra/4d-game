@@ -3,22 +3,32 @@ let model;
 let shootSound;
 
 function preload() {
-  // Load the sound file before the sketch starts
-  shootSound = loadSound('shoot.mp3'); // Make sure 'shoot.mp3' is in your project folder
+  shootSound = loadSound('shoot.mp3'); // Load the sound file
 }
 
 function setup() {
   createCanvas(600, 600, WEBGL);
   noStroke();
   model = identityMatrix(5);
-  for (let i = 0; i < 100; i++) {
-    world.push(randomSphere());
-  }
+  generateWorld(100);
+}
+
+function draw() {
+  background(220);
+  handleInput();
+  setupLighting();
+  drawWorld();
+  drawTarget();
 }
 
 function keyPressed() {
-  if (key === ' ') {
-    shoot();
+  if (key === ' ') shoot();
+}
+
+// World Management
+function generateWorld(count) {
+  for (let i = 0; i < count; i++) {
+    world.push(randomSphere());
   }
 }
 
@@ -30,25 +40,17 @@ function randomSphere() {
   };
 }
 
-function draw() {
-  background(220);
-
-  handleInput();
-
-  ambientLight(150);
-  directionalLight(255, 255, 255, 0, 1, -1);
-
+// Drawing Functions
+function drawWorld() {
   world.forEach(({ center, radius, color }) => {
     drawSphere(center, radius, color);
   });
-
-  drawTarget();
 }
 
-function drawSphere(center, radius, color, transform=true) {
-  const [x, y, z, w] = transform ? matVecMult(model, [...center, 1]): center;
-
+function drawSphere(center, radius, color, transform = true) {
+  const [x, y, z, w] = transform ? matVecMult(model, [...center, 1]) : center;
   const validRadius = Math.sqrt(radius ** 2 - w ** 2);
+
   if (!isNaN(validRadius) && validRadius >= 0) {
     push();
     translate(x, y, z);
@@ -58,6 +60,20 @@ function drawSphere(center, radius, color, transform=true) {
   }
 }
 
+function drawTarget() {
+  push();
+  drawingContext.disable(drawingContext.DEPTH_TEST); // Disable depth test
+  translate(0, 0, 0);
+  strokeWeight(2);
+  stroke(255, 0, 0); // Red color
+  noFill();
+  line(-20, 0, 0, 20, 0, 0); // Horizontal line
+  line(0, -20, 0, 0, 20, 0); // Vertical line
+  drawingContext.enable(drawingContext.DEPTH_TEST); // Re-enable depth test
+  pop();
+}
+
+// Input Handling
 function handleInput() {
   handleRotation();
   handleTranslation();
@@ -78,7 +94,7 @@ function handleTranslation() {
 
   Object.entries(keyMap).forEach(([key, value]) => {
     if (keyIsDown(key.charCodeAt(0))) {
-      transform = translationMatrix(...value);
+      const transform = translationMatrix(...value);
       model = matMatMult(transform, model);
     }
   });
@@ -99,51 +115,28 @@ function handleRotation() {
 
   Object.entries(keyMap).forEach(([key, value]) => {
     if (keyIsDown(key.charCodeAt(0))) {
-      transform = rotationAboutPoint([0,0,0,0], ...value, angle());
+      const transform = rotationAboutPoint([0, 0, 0, 0], ...value, angle());
       model = matMatMult(transform, model);
     }
   });
 }
 
-function drawTarget() {
-  push();
-
-  // Disable depth test to draw on top
-  drawingContext.disable(drawingContext.DEPTH_TEST);
-
-  translate(0, 0, 0);
-
-  strokeWeight(2);
-  stroke(255, 0, 0);  // Red color
-  noFill();
-
-  line(-20, 0, 0, 20, 0, 0);  // Horizontal line
-  line(0, -20, 0, 0, 20, 0);  // Vertical line
-
-  // Re-enable depth test for future objects
-  drawingContext.enable(drawingContext.DEPTH_TEST);
-
-  pop();
-}
-
+// Shooting Logic
 function shoot() {
-  shootSound.play(); // Play the shooting sound
+  shootSound.play();
   world = world.filter(({ center, radius }) => {
     const [x, y, z, w] = matVecMult(model, [...center, 1]);
     const d = Math.sqrt(radius ** 2 - w ** 2);
-
-    // Check if the ball is visible
     const isVisible = !isNaN(d) && d >= 0;
+    if (!isVisible) return true;
 
-    if (!isVisible) return true; // If not visible, keep the ball
-
-    // Calculate the distance from the target center (0, 0)
     const distance = Math.sqrt(x ** 2 + y ** 2);
-
-    // Check if the ball is under the target (center of the screen)
-    const isUnderTarget = distance <= radius;
-
-    // Remove the ball if it's under the target
-    return !isUnderTarget;
+    return distance > radius; // Remove spheres under the target
   });
+}
+
+// Lighting Setup
+function setupLighting() {
+  ambientLight(150);
+  directionalLight(255, 255, 255, 0, 1, -1);
 }
