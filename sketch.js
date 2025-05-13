@@ -12,10 +12,9 @@ function setup() {
 }
 
 function player() {
-  const [x, y, z, w, t] = model.map(row => row[4]);
+  const [x, y, z, w, t] = model.map((row) => row[4]);
   return [-x / t, -y / t, -z / t, -w / t];
 }
-
 
 function randomSphere() {
   return {
@@ -28,16 +27,16 @@ function randomSphere() {
 function draw() {
   background(220);
 
-  handleInput()
-  
+  handleInput();
+
   ambientLight(150);
   directionalLight(255, 255, 255, 0, 1, -1);
-  
-  world.forEach(({center, radius, color}) => {
-    drawSphere(center, radius, color);
-  })
 
-  drawSphere(player(), playerRadius, [255,255,0])
+  world.forEach(({ center, radius, color }) => {
+    drawSphere(center, radius, color);
+  });
+
+  drawSphere(player(), playerRadius, [255, 255, 0]);
 }
 
 function drawSphere(center, radius, color) {
@@ -54,7 +53,48 @@ function drawSphere(center, radius, color) {
 }
 
 function handleInput() {
-  if(keyIsDown('A'.charCodeAt(0))){
-    console.log(key)
-  }
+  handleRotation();
+  handleTranslation();
+}
+
+function handleTranslation() {
+  const step = 5;
+  const keyMap = {
+    Y: [step, 0, 0, 0],
+    H: [-step, 0, 0, 0],
+    U: [0, step, 0, 0],
+    J: [0, -step, 0, 0],
+    I: [0, 0, step, 0],
+    K: [0, 0, -step, 0],
+    O: [0, 0, 0, step],
+    L: [0, 0, 0, -step],
+  };
+
+  Object.entries(keyMap).forEach(([key, value]) => {
+    if (keyIsDown(key.charCodeAt(0))) {
+      transform = translationMatrix(...value);
+      model = matMatMult(transform, model);
+    }
+  });
+}
+
+function handleRotation() {
+  const rotationSpeed = 0.02;
+  const angle = () => (keyIsDown(SHIFT) ? -rotationSpeed : rotationSpeed);
+
+  const keyMap = {
+    Q: [0, 1],
+    W: [0, 2],
+    E: [1, 2],
+    A: [0, 3],
+    S: [1, 3],
+    D: [2, 3],
+  };
+
+  Object.entries(keyMap).forEach(([key, value]) => {
+    if (keyIsDown(key.charCodeAt(0))) {
+      transform = rotationAboutPoint(player(), ...value, angle());
+      model = matMatMult(transform, model);
+    }
+  });
 }
