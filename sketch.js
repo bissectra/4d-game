@@ -27,6 +27,8 @@ function randomSphere() {
 
 function draw() {
   background(220);
+
+  handleInput()
   
   ambientLight(150);
   directionalLight(255, 255, 255, 0, 1, -1);
@@ -48,5 +50,11 @@ function drawSphere(center, radius, color) {
     ambientMaterial(...color);
     sphere(validRadius);
     pop();
+  }
+}
+
+function handleInput() {
+  if(keyIsDown('A'.charCodeAt(0))){
+    console.log(key)
   }
 }
