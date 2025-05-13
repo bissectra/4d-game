@@ -36,7 +36,7 @@ function draw() {
     drawSphere(center, radius, color);
   });
 
-  drawSphere([0,0,0,0], playerRadius, [255, 255, 0], false);
+  drawTarget();
 }
 
 function drawSphere(center, radius, color, transform=true) {
@@ -98,3 +98,25 @@ function handleRotation() {
     }
   });
 }
+
+function drawTarget() {
+  push();
+
+  // Disable depth test to draw on top
+  drawingContext.disable(drawingContext.DEPTH_TEST);
+
+  translate(0, 0, 0);
+
+  strokeWeight(2);
+  stroke(255, 0, 0);  // Red color
+  noFill();
+
+  line(-playerRadius, 0, 0, playerRadius, 0, 0);  // Horizontal line
+  line(0, -playerRadius, 0, 0, playerRadius, 0);  // Vertical line
+
+  // Re-enable depth test for future objects
+  drawingContext.enable(drawingContext.DEPTH_TEST);
+
+  pop();
+}
+
