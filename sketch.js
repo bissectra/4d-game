@@ -1,6 +1,7 @@
 let world = [];
 let model;
 let shootSound;
+let score = 0; // Initialize the score
 
 function preload() {
   shootSound = loadSound('shoot.mp3'); // Load the sound file
@@ -11,6 +12,9 @@ function setup() {
   noStroke();
   model = identityMatrix(5);
   generateWorld(100);
+
+  // Initialize the score display
+  updateScore();
 }
 
 function draw() {
@@ -127,15 +131,38 @@ function handleRotation(key, _, rotationSpeed) {
 // Shooting Logic
 function shoot() {
   shootSound.play();
+  let hitCount = 0; // Track how many spheres are hit
+
   world = world.filter(({ center, radius }) => {
     const [x, y, z, w] = matVecMult(model, [...center, 1]);
     const d = Math.sqrt(radius ** 2 - w ** 2);
     const isVisible = !isNaN(d) && d >= 0;
+
     if (!isVisible) return true;
 
     const distance = Math.sqrt(x ** 2 + y ** 2);
-    return distance > radius; // Remove spheres under the target
+    const isHit = distance <= radius;
+
+    if (isHit) {
+      hitCount++; // Increment hit count
+      return false; // Remove the sphere
+    }
+
+    return true; // Keep the sphere
   });
+
+  // Update the score if any spheres were hit
+  if (hitCount > 0) {
+    score += hitCount; // Increment score by the number of spheres hit
+    updateScore(); // Update the score display
+  }
+}
+
+function updateScore() {
+  const scoreElement = document.getElementById('score');
+  if (scoreElement) {
+    scoreElement.textContent = score; // Update the score in the HTML
+  }
 }
 
 // Lighting Setup
