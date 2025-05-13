@@ -1,10 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.5/lib/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/addons/p5.sound.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="style.css" />
     <meta charset="utf-8" />
+    <!-- ensure proper viewport sizing on Safari/mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <title>4D Game</title>
+
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- p5.js core + sound addon -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.5/lib/p5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.5/lib/addons/p5.sound.min.js"></script>
   </head>
   <body>
     <div id="info-container">
@@ -19,6 +26,8 @@
     <div id="score-container">
       <h2>Score: <span id="score">0</span></h2>
     </div>
+
+    <!-- your game logic -->
     <script src="sketch.js"></script>
     <script src="math.js"></script>
   </body>

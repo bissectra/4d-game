@@ -4,15 +4,15 @@ let shootSound;
 let score = 0; // Initialize the score
 
 function preload() {
-  shootSound = loadSound('shoot.mp3'); // Load the sound file
+  shootSound = loadSound("shoot.mp3"); // Load the sound file
 }
 
 function setup() {
-  const canvasContainer = document.body; // Use the body to calculate available space
-  const canvasWidth = canvasContainer.clientWidth;
-  const canvasHeight = canvasContainer.clientHeight - document.querySelector('main').offsetHeight;
+  // create a full-window WEBGL canvas behind the UI
+  const cnv = createCanvas(windowWidth, windowHeight, WEBGL);
+  cnv.position(0, 0);
+  cnv.style("z-index", "-1");
 
-  createCanvas(canvasWidth, canvasHeight, WEBGL);
   noStroke();
   model = identityMatrix(5);
   generateWorld(100);
@@ -30,18 +30,15 @@ function draw() {
 }
 
 function windowResized() {
-  const canvasContainer = document.body; // Use the body to calculate available space
-  const canvasWidth = canvasContainer.clientWidth;
-  const canvasHeight = canvasContainer.clientHeight - document.querySelector('main').offsetHeight;
-
-  resizeCanvas(canvasWidth, canvasHeight);
+  // resize the canvas to fill the new window dimensions
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 function keyPressed() {
-  if (key === ' ') shoot();
+  if (key === " ") shoot();
 }
 
-// World Management
+// ——— World Management ———
 function generateWorld(count) {
   for (let i = 0; i < count; i++) {
     world.push(randomSphere());
@@ -56,7 +53,7 @@ function randomSphere() {
   };
 }
 
-// Drawing Functions
+// ——— Drawing Functions ———
 function drawWorld() {
   world.forEach(({ center, radius, color }) => {
     drawSphere(center, radius, color);
@@ -65,7 +62,7 @@ function drawWorld() {
 
 function drawSphere(center, radius, color, transform = true) {
   const [x, y, z, w] = transform ? matVecMult(model, [...center, 1]) : center;
-  const validRadius = Math.sqrt(radius ** 2 - w ** 2);
+  const validRadius = Math.sqrt(radius * radius - w * w);
 
   if (!isNaN(validRadius) && validRadius >= 0) {
     push();
@@ -78,38 +75,39 @@ function drawSphere(center, radius, color, transform = true) {
 
 function drawTarget() {
   push();
-  drawingContext.disable(drawingContext.DEPTH_TEST); // Disable depth test
+  drawingContext.disable(drawingContext.DEPTH_TEST);
   translate(0, 0, 0);
   strokeWeight(2);
-  stroke(255, 0, 0); // Red color
+  stroke(255, 0, 0);
   noFill();
-  line(-20, 0, 0, 20, 0, 0); // Horizontal line
-  line(0, -20, 0, 0, 20, 0); // Vertical line
-  drawingContext.enable(drawingContext.DEPTH_TEST); // Re-enable depth test
+  line(-20, 0, 0, 20, 0, 0);
+  line(0, -20, 0, 0, 20, 0);
+  drawingContext.enable(drawingContext.DEPTH_TEST);
   pop();
 }
 
-// Input Handling
+// ——— Input Handling ———
 function handleInput() {
   const step = 3;
   const rotationSpeed = 0.02;
 
-  const keyMappings = [
-    { keys: ['Y', 'H', 'U', 'J', 'I', 'K', 'O', 'L'], action: handleTranslation },
-    { keys: ['Q', 'W', 'E', 'A', 'S', 'D'], action: handleRotation },
-  ];
+  // translation keys
+  ["Y", "H", "U", "J", "I", "K", "O", "L"].forEach((k) => {
+    if (keyIsDown(k.charCodeAt(0))) {
+      handleTranslation(k, step);
+    }
+  });
 
-  keyMappings.forEach(({ keys, action }) => {
-    keys.forEach((key) => {
-      if (keyIsDown(key.charCodeAt(0))) {
-        action(key, step, rotationSpeed);
-      }
-    });
+  // rotation keys
+  ["Q", "W", "E", "A", "S", "D"].forEach((k) => {
+    if (keyIsDown(k.charCodeAt(0))) {
+      handleRotation(k, rotationSpeed);
+    }
   });
 }
 
 function handleTranslation(key, step) {
-  const keyMap = {
+  const map = {
     Y: [step, 0, 0, 0],
     H: [-step, 0, 0, 0],
     U: [0, step, 0, 0],
@@ -119,15 +117,13 @@ function handleTranslation(key, step) {
     O: [0, 0, 0, step],
     L: [0, 0, 0, -step],
   };
-
-  const transform = translationMatrix(...keyMap[key]);
-  model = matMatMult(transform, model);
+  const t = translationMatrix(...map[key]);
+  model = matMatMult(t, model);
 }
 
-function handleRotation(key, _, rotationSpeed) {
-  const angle = keyIsDown(SHIFT) ? -rotationSpeed : rotationSpeed;
-
-  const keyMap = {
+function handleRotation(key, speed) {
+  const angle = keyIsDown(SHIFT) ? -speed : speed;
+  const map = {
     Q: [0, 1],
     W: [0, 2],
     E: [1, 2],
@@ -135,49 +131,42 @@ function handleRotation(key, _, rotationSpeed) {
     S: [1, 3],
     D: [2, 3],
   };
-
-  const transform = rotationAboutPoint([0, 0, 0, 0], ...keyMap[key], angle);
-  model = matMatMult(transform, model);
+  const [i, j] = map[key];
+  const r = rotationAboutPoint([0, 0, 0, 0], i, j, angle);
+  model = matMatMult(r, model);
 }
 
-// Shooting Logic
+// ——— Shooting Logic ———
 function shoot() {
   shootSound.play();
-  let hitCount = 0; // Track how many spheres are hit
+  let hits = 0;
 
   world = world.filter(({ center, radius }) => {
     const [x, y, z, w] = matVecMult(model, [...center, 1]);
-    const d = Math.sqrt(radius ** 2 - w ** 2);
-    const isVisible = !isNaN(d) && d >= 0;
+    const d = Math.sqrt(radius * radius - w * w);
+    const visible = !isNaN(d) && d >= 0;
 
-    if (!isVisible) return true;
-
-    const distance = Math.sqrt(x ** 2 + y ** 2);
-    const isHit = distance <= radius;
-
-    if (isHit) {
-      hitCount++; // Increment hit count
-      return false; // Remove the sphere
+    if (!visible) return true;
+    const dist = Math.sqrt(x * x + y * y);
+    if (dist <= radius) {
+      hits++;
+      return false;
     }
-
-    return true; // Keep the sphere
+    return true;
   });
 
-  // Update the score if any spheres were hit
-  if (hitCount > 0) {
-    score += hitCount; // Increment score by the number of spheres hit
-    updateScore(); // Update the score display
+  if (hits > 0) {
+    score += hits;
+    updateScore();
   }
 }
 
 function updateScore() {
-  const scoreElement = document.getElementById('score');
-  if (scoreElement) {
-    scoreElement.textContent = score; // Update the score in the HTML
-  }
+  const el = document.getElementById("score");
+  if (el) el.textContent = score;
 }
 
-// Lighting Setup
+// ——— Lighting ———
 function setupLighting() {
   ambientLight(150);
   directionalLight(255, 255, 255, 0, 1, -1);
