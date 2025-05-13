@@ -1,6 +1,12 @@
 let world = [];
 let playerRadius = 20;
 let model;
+let shootSound;
+
+function preload() {
+  // Load the sound file before the sketch starts
+  shootSound = loadSound('shoot.mp3'); // Make sure 'shoot.mp3' is in your project folder
+}
 
 function setup() {
   createCanvas(600, 600, WEBGL);
@@ -8,6 +14,12 @@ function setup() {
   model = identityMatrix(5);
   for (let i = 0; i < 100; i++) {
     world.push(randomSphere());
+  }
+}
+
+function keyPressed() {
+  if (key === ' ') {
+    shoot();
   }
 }
 
@@ -120,3 +132,24 @@ function drawTarget() {
   pop();
 }
 
+function shoot() {
+  shootSound.play(); // Play the shooting sound
+  world = world.filter(({ center, radius }) => {
+    const [x, y, z, w] = matVecMult(model, [...center, 1]);
+    const d = Math.sqrt(radius ** 2 - w ** 2);
+
+    // Check if the ball is visible
+    const isVisible = !isNaN(d) && d >= 0;
+
+    if (!isVisible) return true; // If not visible, keep the ball
+
+    // Calculate the distance from the target center (0, 0)
+    const distance = Math.sqrt(x ** 2 + y ** 2);
+
+    // Check if the ball is under the target (center of the screen)
+    const isUnderTarget = distance <= radius;
+
+    // Remove the ball if it's under the target
+    return !isUnderTarget;
+  });
+}
