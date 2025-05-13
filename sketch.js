@@ -1,80 +1,173 @@
 let world = [];
-let rotation;
-const rotationSpeed = 0.02;
-let player = [0,0,0,0]
+let model;
+let shootSound;
+let score = 0; // Initialize the score
 
+function preload() {
+  shootSound = loadSound("shoot.mp3"); // Load the sound file
+}
 
 function setup() {
-  createCanvas(600, 600, WEBGL);
+  // create a full-window WEBGL canvas behind the UI
+  const cnv = createCanvas(windowWidth, windowHeight, WEBGL);
+  cnv.position(0, 0);
+  cnv.style("z-index", "-1");
+
   noStroke();
-  rotation = identityMatrix();
-  for (let i = 0; i < 100; i++) {
+  model = identityMatrix(5);
+  generateWorld(100);
+
+  // Initialize the score display
+  updateScore();
+}
+
+function draw() {
+  background(220);
+  handleInput();
+  setupLighting();
+  drawWorld();
+  drawTarget();
+}
+
+function windowResized() {
+  // resize the canvas to fill the new window dimensions
+  resizeCanvas(windowWidth, windowHeight);
+}
+
+function keyPressed() {
+  if (key === " ") shoot();
+}
+
+// ——— World Management ———
+function generateWorld(count) {
+  for (let i = 0; i < count; i++) {
     world.push(randomSphere());
   }
 }
 
-function draw() {
-  perspective();
-  handleInput();
-  background(200);
+function randomSphere() {
+  return {
+    center: Array.from({ length: 4 }, () => random(-100, 100)),
+    radius: 10,
+    color: [random(0, 200), random(0, 200), random(100, 255)],
+  };
+}
+
+// ——— Drawing Functions ———
+function drawWorld() {
+  world.forEach(({ center, radius, color }) => {
+    drawSphere(center, radius, color);
+  });
+}
+
+function drawSphere(center, radius, color, transform = true) {
+  const [x, y, z, w] = transform ? matVecMult(model, [...center, 1]) : center;
+  const validRadius = Math.sqrt(radius * radius - w * w);
+
+  if (!isNaN(validRadius) && validRadius >= 0) {
+    push();
+    translate(x, y, z);
+    ambientMaterial(...color);
+    sphere(validRadius);
+    pop();
+  }
+}
+
+function drawTarget() {
+  push();
+  drawingContext.disable(drawingContext.DEPTH_TEST);
+  translate(0, 0, 0);
+  strokeWeight(2);
+  stroke(255, 0, 0);
+  noFill();
+  line(-20, 0, 0, 20, 0, 0);
+  line(0, -20, 0, 0, 20, 0);
+  drawingContext.enable(drawingContext.DEPTH_TEST);
+  pop();
+}
+
+// ——— Input Handling ———
+function handleInput() {
+  const step = 3;
+  const rotationSpeed = 0.02;
+
+  // translation keys
+  ["Y", "H", "U", "J", "I", "K", "O", "L"].forEach((k) => {
+    if (keyIsDown(k.charCodeAt(0))) {
+      handleTranslation(k, step);
+    }
+  });
+
+  // rotation keys
+  ["Q", "W", "E", "A", "S", "D"].forEach((k) => {
+    if (keyIsDown(k.charCodeAt(0))) {
+      handleRotation(k, rotationSpeed);
+    }
+  });
+}
+
+function handleTranslation(key, step) {
+  const map = {
+    Y: [step, 0, 0, 0],
+    H: [-step, 0, 0, 0],
+    U: [0, step, 0, 0],
+    J: [0, -step, 0, 0],
+    I: [0, 0, step, 0],
+    K: [0, 0, -step, 0],
+    O: [0, 0, 0, step],
+    L: [0, 0, 0, -step],
+  };
+  const t = translationMatrix(...map[key]);
+  model = matMatMult(t, model);
+}
+
+function handleRotation(key, speed) {
+  const angle = keyIsDown(SHIFT) ? -speed : speed;
+  const map = {
+    Q: [0, 1],
+    W: [0, 2],
+    E: [1, 2],
+    A: [0, 3],
+    S: [1, 3],
+    D: [2, 3],
+  };
+  const [i, j] = map[key];
+  const r = rotationAboutPoint([0, 0, 0, 0], i, j, angle);
+  model = matMatMult(r, model);
+}
+
+// ——— Shooting Logic ———
+function shoot() {
+  shootSound.play();
+  let hits = 0;
+
+  world = world.filter(({ center, radius }) => {
+    const [x, y, z, w] = matVecMult(model, [...center, 1]);
+    const d = Math.sqrt(radius * radius - w * w);
+    const visible = !isNaN(d) && d >= 0;
+
+    if (!visible) return true;
+    const dist = Math.sqrt(x * x + y * y);
+    if (dist <= radius) {
+      hits++;
+      return false;
+    }
+    return true;
+  });
+
+  if (hits > 0) {
+    score += hits;
+    updateScore();
+  }
+}
+
+function updateScore() {
+  const el = document.getElementById("score");
+  if (el) el.textContent = score;
+}
+
+// ——— Lighting ———
+function setupLighting() {
   ambientLight(150);
   directionalLight(255, 255, 255, 0, 1, -1);
-
-  // Draw random spheres and check for collisions with the player
-  world = world.filter(({ center, radius, color }) => {
-    const distToPlayer = calculateDistance(center, player);
-
-    // Check if the distance is less than the sum of the radii (indicating a collision)
-    if (distToPlayer < radius + 30) { // 30 is the radius of the player
-      console.log((world.length - 1) + " spheres to go")
-      return false; // This sphere is eaten and should be removed
-    }
-
-    // Draw the sphere if not eaten (use rotated position for rendering)
-    drawSphere(center, radius, color);
-    
-    return true; // Keep this sphere in the world
-  });
-
-  // Draw controllable player with glow + color shift
-  drawPlayer();
-
-}
-function handleInput() {
-  const keyMap = {
-    81: [0, 1],
-    87: [0, 2],
-    69: [1, 2],
-    65: [0, 3],
-    83: [1, 3],
-    68: [2, 3],
-  };
-  const angle = () => (keyIsDown(SHIFT) ? -rotationSpeed : rotationSpeed);
-
-  // Rotation
-  Object.entries(keyMap).forEach(([code, [i, j]]) => {
-    if (keyIsDown(+code)) {
-      rotation = matMatMult(rotationMatrix(i, j, angle()), rotation);
-    }
-  });
-
-  const moveStep = 5;
-
-  // player movement with intuitive pairing
-  if (keyIsDown(85)) player[0] -= moveStep; // U → X−
-  if (keyIsDown(74)) player[0] += moveStep; // J → X+
-  if (keyIsDown(73)) player[1] += moveStep; // I → Y+
-  if (keyIsDown(75)) player[1] -= moveStep; // K → Y−
-  if (keyIsDown(79)) player[2] -= moveStep; // O → Z−
-  if (keyIsDown(76)) player[2] += moveStep; // L → Z+
-  if (keyIsDown(89)) player[3] -= moveStep; // Y → W−
-  if (keyIsDown(72)) player[3] += moveStep; // H → W+
-
-  // Wrap around [-100, 100]
-  for (let i = 0; i < 4; i++) {
-    if (player[i] > 100)
-      player[i] = -100 + (player[i] - 100);
-    if (player[i] < -100)
-      player[i] = 100 - (-100 - player[i]);
-  }
 }
