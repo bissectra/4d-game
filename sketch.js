@@ -148,7 +148,7 @@ function shoot() {
 
     if (!visible) return true;
     const dist = Math.sqrt(x * x + y * y);
-    if (dist <= radius) {
+    if (dist <= d) {
       hits++;
       return false;
     }
